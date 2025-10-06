@@ -37,17 +37,35 @@ function log(s) {
 
 (async () => {
   try {
-    log('Registering input app...');
+    // register the app in the real /var/lib/eim
+    log('Registering ourselves as input app if not already done...');
     await lunaCall('luna://com.webos.service.eim/addDevice', {
       appId: 'org.webosbrew.autostart',
       pigImage: '',
       mvpdIcon: '',
+      type: 'MVPD_IP', // can be either MVPD_IP or MVPD_RF, required for webOS 3.x
+      label: 'Autostart', // required for webOS 3.x
+      description: 'webosbrew autostart', // required for webOS 3.x
     });
+  } catch (err) {
+    const errData = JSON.parse(err.message);
+    if (errData.errorCode === 'EIM.105') { // input app already registered
+      log('Already registered, good, carrying on...');
+    }
+    else {
+      log(`An error occured:\n${err.stack}`);
+      return;
+    }
+  }
 
+  try {
     await retry(3, async () => {
+      // now setup an eim overlay so that any changes done later don't erase our own app
+      // if /var/lib/webosbrew/eim already exists, keep it that way, changes done in previous
+      // sessions will live here, so just bind mount it, otherwise create it from the /var/lib/eim contents
       log('Setting up eim overlay...');
       const res = await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
-        command: 'if [[ ! -d /var/lib/webosbrew/eim ]]; then cp -r /var/lib/eim /var/lib/webosbrew/eim; fi ; if ! findmnt /var/lib/eim; then mount --bind /var/lib/webosbrew/eim /var/lib/eim ; fi',
+        command: 'if [[ ! -d /var/lib/webosbrew/eim ]]; then cp -r /var/lib/eim /var/lib/webosbrew/eim && echo cp ok || echo cp failed; fi ; if ! findmnt /var/lib/eim; then mount --bind /var/lib/webosbrew/eim /var/lib/eim && echo mount overlay ok || echo mount overlay failed; fi',
       });
       log(`Result: ${res.stdoutString} ${res.stderrString}`);
     });
@@ -56,7 +74,9 @@ function log(s) {
     const res2 = await lunaCall('luna://org.webosbrew.hbchannel.service/autostart', {});
     log(`Result: ${res2.message}`);
 
-    log("Removing input app...");
+    // this just removes ourselves from the overlay, but we still live in the real /var/lib/eim,
+    // which guarantees that we'll survive on the next reboot
+    log("Removing our own input app from eim overlay...");
     await lunaCall('luna://com.webos.service.eim/deleteDevice', {
       appId: 'org.webosbrew.autostart',
     });
@@ -70,7 +90,7 @@ function log(s) {
       if (lastinputPayload.appId) {
         log(`Last input app: ${lastinputPayload.appId}`);
         if (lastinputPayload.appId !== 'org.webosbrew.autostart') {
-          log("Relaunching...");
+          log("Relaunching this app...");
           await lunaCall('luna://com.webos.service.applicationManager/launch', {
             id: lastinputPayload.appId,
           });
@@ -79,6 +99,6 @@ function log(s) {
     }
     log("Done.");
   } catch (err) {
-    log(`An error occured: ${err.stack}`);
+    log(`An error occured:\n${err.stack}`);
   }
 })();
