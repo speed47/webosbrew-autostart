@@ -36,9 +36,28 @@ function log(s) {
 }
 
 (async () => {
+  // always launch autostart first because even if we fail later,
+  // at least everything will have started (including SSH)
+  log("Launching autostart...");
+  const res2 = await lunaCall('luna://org.webosbrew.hbchannel.service/autostart', {});
+  log(`Result: ${res2.message}`);
+
+  // now all that we want is ensuring that we get started on next boot,
+  // all the logic below is here to ensure this is the case
+
   try {
-    // register the app in the real /var/lib/eim
-    log('Registering ourselves as input app if not already done...');
+    // unregister (always succeeds, even if we weren't registered),
+    // then register the app in the real /var/lib/eim
+    log('Unregistering ourselves as input app...');
+    await lunaCall('luna://com.webos.service.eim/deleteDevice', {
+      appId: 'org.webosbrew.autostart',
+    });
+  } catch (err) {
+    log(`An error occurred, but carrying on:\n${err.stack}`);
+  }
+
+  try {
+    log('Registering ourselves as input app...');
     await lunaCall('luna://com.webos.service.eim/addDevice', {
       appId: 'org.webosbrew.autostart',
       pigImage: '',
@@ -70,10 +89,6 @@ function log(s) {
       log(`Result: ${res.stdoutString} ${res.stderrString}`);
     });
 
-    log("Launching autostart...");
-    const res2 = await lunaCall('luna://org.webosbrew.hbchannel.service/autostart', {});
-    log(`Result: ${res2.message}`);
-
     // this just removes ourselves from the overlay, but we still live in the real /var/lib/eim,
     // which guarantees that we'll survive on the next reboot
     log("Removing our own input app from eim overlay...");
@@ -81,6 +96,7 @@ function log(s) {
       appId: 'org.webosbrew.autostart',
     });
 
+    // now be polite and launch the actual previous input app, if any
     log("Checking last input app...");
     const lastinput = await lunaCall('luna://org.webosbrew.hbchannel.service/exec', {
       command: 'cat /var/lib/eim/lastinput',
