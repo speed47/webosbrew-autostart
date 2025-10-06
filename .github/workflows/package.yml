@@ -1,0 +1,31 @@
+name: package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
+    - name: apt-get install
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: sudo apt-get update && sudo apt-get dist-upgrade -y && sudo apt-get install -y npm
+    - name: npm install
+      run: npm install
+    - name: npm build
+      run: npm run build
+    - name: npm package
+      run: npm run package
+    - uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: '*.ipk'
+        retention-days: 30
