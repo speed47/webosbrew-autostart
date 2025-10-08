@@ -30,7 +30,7 @@ jobs:
       run: |
         GIT_COMMIT=$(git rev-parse --short HEAD)
         PREFIX=$(basename $(ls -1 *.ipk) .ipk)
-        echo "zip=$PREFIX-$GIT_COMMIT.zip" >> "$GITHUB_OUTPUT"
+        echo "zip=$PREFIX-$GIT_COMMIT" >> "$GITHUB_OUTPUT"
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.ipk.outputs.zip }}
