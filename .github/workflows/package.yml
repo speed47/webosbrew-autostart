@@ -21,18 +21,27 @@ jobs:
       run: sudo apt-get update && sudo apt-get dist-upgrade -y && sudo apt-get install -y npm
     - name: npm install
       run: npm install
-    - name: npm build
-      run: npm run build
-    - name: npm package
-      run: npm run package
+    - name: npm build and package
+      run: npm run build && npm run package
     - name: get ipk artifact name
       id: ipk
       run: |
         GIT_COMMIT=$(git rev-parse --short HEAD)
         PREFIX=$(basename $(ls -1 *.ipk) .ipk)
-        echo "zip=$PREFIX-$GIT_COMMIT" >> "$GITHUB_OUTPUT"
+        echo "name=$PREFIX-$GIT_COMMIT" >> "$GITHUB_OUTPUT"
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ steps.ipk.outputs.zip }}
+        name: ${{ steps.ipk.outputs.name }}-standard
+        path: '*.ipk'
+        retention-days: 30
+    - name: modify source for autoclose version
+      run: |
+        find frontend -name "*.js" -print0 | xargs -r0 sed -i -re 's=// %AUTOCLOSE% =='
+        find frontend -name "*.ipk" -type f -delete
+    - name: npm build and package
+      run: npm run build && npm run package
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.ipk.outputs.name }}-autoclose
         path: '*.ipk'
         retention-days: 30
