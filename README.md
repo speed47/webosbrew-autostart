@@ -18,6 +18,10 @@ This is a minimal webosbrew Homebrew Channel autostart application relying on
 
 **Note:** This is a complete rewrite of https://github.com/kopiro/webosbrew-autostart
 
+**Note2:** This repo is a fork of the abovementioned rewrite.
+It enhances compatibility with some webOS versions (well, at least mine: webOS 3.4),
+see [this issue](https://github.com/webosbrew/webos-homebrew-channel/issues/124#issuecomment-3372904638) for more context.
+
 Building
 --------
 
