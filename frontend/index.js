@@ -167,4 +167,7 @@ function logres(res) {
   }
 
   log("Done.");
+
+  // %AUTOCLOSE% await new Promise(resolve => setTimeout(resolve, 1000));
+  // %AUTOCLOSE% window.close();
 })();
