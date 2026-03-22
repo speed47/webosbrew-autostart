@@ -1,3 +1,11 @@
+# THIS VERSION IS OBSOLETE
+
+The limitation it was built to work around has been fixed in webos-homebrew-channel in the following PR: https://github.com/webosbrew/webos-homebrew-channel/pull/230
+
+If it's not merged yet, a custom build is available in the original issue: https://github.com/webosbrew/webos-homebrew-channel/issues/124
+
+Below is the original readme contents.
+
 webosbrew-autostart
 ===================
 
